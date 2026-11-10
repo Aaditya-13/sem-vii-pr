@@ -1,0 +1,1 @@
+﻿Deep learning uses neural networks to recognize patterns in images and speech.

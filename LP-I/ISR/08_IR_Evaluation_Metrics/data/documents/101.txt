@@ -1,0 +1,1 @@
+A study measures how airflow over an aerofoil changes lift and surface pressure at different speeds.

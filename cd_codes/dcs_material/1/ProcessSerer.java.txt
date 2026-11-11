@@ -1,0 +1,58 @@
+
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class ProcessServer extends UnicastRemoteObject
+        implements ProcessService {
+
+    private final AtomicInteger requestCount = new AtomicInteger(0);
+
+    public ProcessServer() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public String processRequest(String clientName, String message)
+            throws RemoteException {
+
+        int requestId = requestCount.incrementAndGet();
+        String threadName = Thread.currentThread().getName();
+
+        System.out.println("Request " + requestId
+                + " received from " + clientName
+                + " on " + threadName);
+
+        try {
+            // Simulate time-consuming processing
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RemoteException("Processing interrupted", e);
+        }
+
+        String response = "Request " + requestId
+                + " processed for " + clientName
+                + ". Message: " + message;
+
+        System.out.println(response);
+        return response;
+    }
+
+    public static void main(String[] args) {
+        try {
+            Registry registry = LocateRegistry.createRegistry(1099);
+
+            ProcessServer server = new ProcessServer();
+
+            registry.rebind("ProcessService", server);
+
+            System.out.println(
+                "Multithreaded RMI Server is running on port 1099...");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}

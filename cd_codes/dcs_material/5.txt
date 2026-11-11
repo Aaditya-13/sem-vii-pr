@@ -1,0 +1,159 @@
+
+from flask import Flask, jsonify, request
+import requests
+import threading
+import time
+
+# ==================================================
+# PARTITION 1: WEB SERVICE (SERVER)
+# ==================================================
+
+app = Flask(__name__)
+
+# In-memory database
+students = {
+    1: {"id": 1, "name": "Amit", "course": "Computer Science"},
+    2: {"id": 2, "name": "Priya", "course": "Information Technology"},
+    3: {"id": 3, "name": "Rahul", "course": "Electronics"}
+}
+
+
+@app.route("/")
+def home():
+    return jsonify({
+        "message": "Student Information Web Service",
+        "endpoints": ["/students", "/students/<id>"]
+    })
+
+
+@app.route("/students", methods=["GET"])
+def get_students():
+    return jsonify(list(students.values()))
+
+
+@app.route("/students/<int:student_id>", methods=["GET"])
+def get_student(student_id):
+    student = students.get(student_id)
+
+    if student is None:
+        return jsonify({"error": "Student not found"}), 404
+
+    return jsonify(student)
+
+
+@app.route("/students", methods=["POST"])
+def add_student():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify({"error": "JSON object required"}), 400
+
+    name = data.get("name")
+    course = data.get("course")
+
+    if not isinstance(name, str) or not name.strip():
+        return jsonify({"error": "Valid name is required"}), 400
+
+    if not isinstance(course, str) or not course.strip():
+        return jsonify({"error": "Valid course is required"}), 400
+
+    student_id = max(students.keys(), default=0) + 1
+
+    student = {
+        "id": student_id,
+        "name": name.strip(),
+        "course": course.strip()
+    }
+
+    students[student_id] = student
+
+    return jsonify({
+        "message": "Student added successfully",
+        "student": student
+    }), 201
+
+
+# ==================================================
+# PARTITION 2: CLIENT APPLICATION
+# ==================================================
+
+SERVICE_URL = "http://127.0.0.1:5000"
+
+
+def consume_web_service():
+    print("\n========== DISTRIBUTED CLIENT ==========")
+
+    try:
+        # Request all students from the web service
+        response = requests.get(
+            f"{SERVICE_URL}/students",
+            timeout=5
+        )
+
+        response.raise_for_status()
+        print("\nStudent List:")
+
+        for student in response.json():
+            print(
+                f"ID: {student['id']}, "
+                f"Name: {student['name']}, "
+                f"Course: {student['course']}"
+            )
+
+        # Request a specific student
+        response = requests.get(
+            f"{SERVICE_URL}/students/1",
+            timeout=5
+        )
+
+        if response.status_code == 200:
+            print("\nStudent with ID 1:")
+            print(response.json())
+        else:
+            print("\nStudent not found.")
+
+        # Add a student through the REST API
+        new_student = {
+            "name": "Sneha",
+            "course": "Data Science"
+        }
+
+        response = requests.post(
+            f"{SERVICE_URL}/students",
+            json=new_student,
+            timeout=5
+        )
+
+        print("\nAdd Student Response:")
+        print(response.status_code, response.json())
+
+    except requests.RequestException as error:
+        print("Unable to contact web service:", error)
+
+
+# ==================================================
+# PARTITION 3: START SERVER AND CLIENT
+# ==================================================
+
+def run_server():
+    app.run(
+        host="127.0.0.1",
+        port=5000,
+        debug=False,
+        use_reloader=False
+    )
+
+
+if __name__ == "__main__":
+    # Start web service in a background thread
+    server_thread = threading.Thread(
+        target=run_server,
+        daemon=True
+    )
+    server_thread.start()
+
+    # Give the server time to start
+    time.sleep(1.5)
+
+    # Run the client application
+    consume_web_service()

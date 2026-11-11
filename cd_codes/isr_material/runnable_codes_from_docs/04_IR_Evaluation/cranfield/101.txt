@@ -1,0 +1,1 @@
+Aerodynamic lift and drag measurements for aircraft wings in a wind tunnel.

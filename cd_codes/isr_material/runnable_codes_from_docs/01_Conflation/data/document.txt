@@ -1,0 +1,1 @@
+Retrieval systems retrieve useful documents. Searching documents requires processing words; a system processes and retrieves similar information.

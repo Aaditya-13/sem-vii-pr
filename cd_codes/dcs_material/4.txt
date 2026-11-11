@@ -1,0 +1,205 @@
+
+import random
+
+
+# ============================================================
+# 1. BERKELEY ALGORITHM - CLOCK SYNCHRONIZATION
+# ============================================================
+
+def berkeley_algorithm():
+    print("\n========== BERKELEY CLOCK SYNCHRONIZATION ==========")
+
+    # Clock values represent seconds for simulation purposes.
+    clocks = [10, 15, 12, 8, 20]
+    master = 0
+
+    print(f"Master process: P{master}")
+    print("Initial clock values:")
+
+    for i, clock in enumerate(clocks):
+        print(f"P{i}: {clock} seconds")
+
+    # Master calculates each process's offset relative to itself.
+    master_time = clocks[master]
+    offsets = [clock - master_time for clock in clocks]
+
+    print("\nClock offsets relative to master:")
+    for i, offset in enumerate(offsets):
+        print(f"P{i}: {offset:+d} seconds")
+
+    # Calculate the average offset.
+    average_offset = sum(offsets) / len(offsets)
+
+    print(f"\nAverage offset: {average_offset:.2f} seconds")
+
+    # Each process adjusts its clock toward the average.
+    print("\nClock adjustments:")
+    for i in range(len(clocks)):
+        adjustment = round(average_offset - offsets[i])
+        clocks[i] += adjustment
+        print(
+            f"P{i}: adjustment = {adjustment:+d}, "
+            f"corrected clock = {clocks[i]} seconds"
+        )
+
+    print("\nBerkeley synchronization completed.")
+
+
+# ============================================================
+# 2. BULLY ALGORITHM - LEADER ELECTION
+# ============================================================
+
+def bully_algorithm():
+    print("\n========== BULLY LEADER ELECTION ==========")
+
+    # Process IDs are unique; the highest active ID wins.
+    processes = {
+        1: True,
+        2: True,
+        3: True,
+        4: True,
+        5: True
+    }
+
+    # Simulate failure of the current coordinator.
+    coordinator = 5
+    processes[coordinator] = False
+
+    print(f"Process P{coordinator} (coordinator) has failed.")
+
+    # Process 2 detects the failure and starts an election.
+    initiator = 2
+    print(f"\nP{initiator} starts an election.")
+
+    higher_processes = [
+        pid for pid, active in processes.items()
+        if active and pid > initiator
+    ]
+
+    print(f"P{initiator} sends ELECTION messages to higher processes.")
+
+    alive_responders = []
+
+    for pid in higher_processes:
+        print(f"P{pid} responds OK to P{initiator}.")
+        alive_responders.append(pid)
+
+    if not alive_responders:
+        processes[initiator] = True
+        coordinator = initiator
+        print(f"\nP{coordinator} becomes the new coordinator.")
+    else:
+        # The highest active process eventually wins.
+        winner = max(
+            pid for pid, active in processes.items() if active
+        )
+        coordinator = winner
+
+        print(
+            f"\nP{winner} has the highest active process ID."
+        )
+        print(f"P{winner} announces itself as coordinator.")
+
+    print(f"New coordinator: P{coordinator}")
+
+
+# ============================================================
+# 3. RING ALGORITHM - LEADER ELECTION
+# ============================================================
+
+def ring_algorithm():
+    print("\n========== RING LEADER ELECTION ==========")
+
+    # Processes are arranged in a logical ring.
+    processes = [1, 2, 3, 4, 5]
+    active = {1, 2, 3, 4, 5}
+    failed = 5
+
+    active.remove(failed)
+
+    print(f"Process P{failed} has failed.")
+    print("Active processes:", sorted(active))
+
+    # Process 2 initiates the election.
+    initiator = 2
+    print(f"\nP{initiator} starts an election.")
+
+    # Forward the election message around the ring.
+    election_ids = []
+    current_index = processes.index(initiator)
+
+    for _ in range(len(processes)):
+        pid = processes[current_index]
+
+        if pid in active:
+            election_ids.append(pid)
+            print(
+                f"P{pid} receives election message. "
+                f"Election list: {election_ids}"
+            )
+
+        current_index = (current_index + 1) % len(processes)
+
+        # Stop after returning to the initiator.
+        if processes[current_index] == initiator:
+            break
+
+    # Highest process ID in the election list becomes leader.
+    leader = max(election_ids)
+
+    print(f"\nElection complete. Highest ID: P{leader}")
+
+    # Circulate the coordinator announcement.
+    current_index = processes.index(leader)
+
+    print("\nCoordinator announcement:")
+    for _ in range(len(processes)):
+        pid = processes[current_index]
+
+        if pid in active:
+            print(f"P{pid} recognizes P{leader} as coordinator.")
+
+        current_index = (current_index + 1) % len(processes)
+
+        if processes[current_index] == leader:
+            break
+
+    print(f"\nNew coordinator: P{leader}")
+
+
+# ============================================================
+# MAIN MENU
+# ============================================================
+
+def main():
+    while True:
+        print("\n========================================")
+        print(" DISTRIBUTED SYSTEMS ALGORITHMS")
+        print("========================================")
+        print("1. Berkeley Clock Synchronization")
+        print("2. Bully Leader Election")
+        print("3. Ring Leader Election")
+        print("4. Run All Algorithms")
+        print("0. Exit")
+
+        choice = input("\nEnter your choice: ").strip()
+
+        if choice == "1":
+            berkeley_algorithm()
+        elif choice == "2":
+            bully_algorithm()
+        elif choice == "3":
+            ring_algorithm()
+        elif choice == "4":
+            berkeley_algorithm()
+            bully_algorithm()
+            ring_algorithm()
+        elif choice == "0":
+            print("Exiting program.")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,17 +1,30 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import json
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+students = [
+    {"id": 1, "name": "Amit", "course": "Computer Science"},
+    {"id": 2, "name": "Priya", "course": "Information Technology"},
+    {"id": 3, "name": "Rahul", "course": "Electronics"}
+]
 
 
-class HelloService(BaseHTTPRequestHandler):
-    def do_GET(self):
-        data = json.dumps({"message": "Hello from the web service"}).encode()
+@app.route("/")
+def home():
+    return """
+    <html>
+      <body>
+        <h1>Student Information Service</h1>
+        <p>Open <a href="/students">/students</a> to view the JSON API.</p>
+      </body>
+    </html>
+    """
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(data)
+
+@app.route("/students", methods=["GET"])
+def get_students():
+    return jsonify(students)
 
 
-server = HTTPServer(("127.0.0.1", 8000), HelloService)
-print("Web service running at http://127.0.0.1:8000")
-server.serve_forever()
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)

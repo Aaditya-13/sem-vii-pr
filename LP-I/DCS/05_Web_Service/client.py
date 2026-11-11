@@ -1,8 +1,8 @@
-from urllib.request import urlopen
-import json
+import requests
 
+url = "http://127.0.0.1:5000/students"
+response = requests.get(url)
+response.raise_for_status()
 
-with urlopen("http://127.0.0.1:8000/") as response:
-    data = json.loads(response.read().decode())
-
-print("Service response:", data["message"])
+for student in response.json():
+    print(student["id"], student["name"], student["course"])

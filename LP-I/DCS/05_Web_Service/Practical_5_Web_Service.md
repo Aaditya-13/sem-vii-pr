@@ -2,150 +2,173 @@
 
 ## Aim
 
-To create a simple HTTP web service that returns JSON and write a client
-application that requests and displays the response.
+To create a simple Flask web service that displays an HTML page and provides
+student information as JSON, then consume the JSON service from a Python client.
 
 ## Theory
 
-A web service lets one application request data or an operation from another
-application over HTTP. The service in this practical listens for an HTTP GET
-request and responds with a JSON message. The client sends a request to the
-service URL, reads the HTTP response, and decodes the JSON data.
+A web service lets one application request information or an operation from
+another application over HTTP. This practical uses Flask to define two routes:
+`/` returns a simple HTML page, and `/students` returns a list of students as
+JSON. The client sends a GET request to `/students`, receives the JSON response,
+and prints the student details.
 
-The server uses Python's built-in `http.server` module. Its request handler
-implements `do_GET()` to process GET requests. The client uses the built-in
-`urllib.request.urlopen()` function to contact the service. See the Python
-documentation for [`http.server`](https://docs.python.org/3/library/http.server.html)
-and [`urllib.request`](https://docs.python.org/3/library/urllib.request.html).
+Flask maps URL routes to Python functions. `jsonify` converts Python data into a
+JSON HTTP response. The client uses the Requests library to send its HTTP GET
+request and decode the JSON response. Flask and Requests are third-party
+packages; the [Flask installation guide](https://flask.palletsprojects.com/en/stable/installation/)
+and [Requests installation guide](https://requests.readthedocs.io/en/latest/user/install/)
+document their installation.
 
-This version uses only Python's standard library. The current computer has
-Python 3.13.7, and Flask and Requests are not installed, so no package
-installation is needed for this version.
+The ZIP uses the same Flask and Requests approach for its student service. This
+version keeps the same student-data idea and trims it to one JSON API route,
+while retaining a small HTML home page. It leaves out the optional single
+student route, POST route, input validation, and background-thread startup.
 
 ## Files and roles
 
 | File | Role |
 |---|---|
-| `server.py` | Starts the HTTP service and returns a JSON message. |
-| `client.py` | Requests the service and prints the returned message. |
+| `server.py` | Runs the Flask service, serves an HTML home page, and returns student records as JSON. |
+| `client.py` | Requests `/students` and displays the returned records. |
 
 ## Program
 
 ### `server.py`
 
 ```python
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import json
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+students = [
+    {"id": 1, "name": "Amit", "course": "Computer Science"},
+    {"id": 2, "name": "Priya", "course": "Information Technology"},
+    {"id": 3, "name": "Rahul", "course": "Electronics"}
+]
 
 
-class HelloService(BaseHTTPRequestHandler):
-    def do_GET(self):
-        data = json.dumps({"message": "Hello from the web service"}).encode()
+@app.route("/")
+def home():
+    return """
+    <html>
+      <body>
+        <h1>Student Information Service</h1>
+        <p>Open <a href="/students">/students</a> to view the JSON API.</p>
+      </body>
+    </html>
+    """
 
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(data)
+
+@app.route("/students", methods=["GET"])
+def get_students():
+    return jsonify(students)
 
 
-server = HTTPServer(("127.0.0.1", 8000), HelloService)
-print("Web service running at http://127.0.0.1:8000")
-server.serve_forever()
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)
 ```
 | Line(s) | Explanation |
 |---|---|
-| 1 | Imports the HTTP request handler base class and HTTP server class. |
-| 2 | Imports `json` to encode the response as JSON. |
-| 5 | Defines the service's request handler by extending `BaseHTTPRequestHandler`. |
-| 6 | Defines the method that handles HTTP GET requests. |
-| 7 | Creates a JSON message and encodes it as bytes for the HTTP response body. |
-| 9 | Sends the HTTP success status `200 OK`. |
-| 10 | Sets the response content type to JSON. |
-| 11 | Finishes sending the response headers. |
-| 12 | Writes the JSON bytes into the response body. |
-| 15 | Creates the web server on local address `127.0.0.1`, port `8000`, using `HelloService` to handle requests. |
-| 16 | Prints the URL where the service is listening. |
-| 17 | Keeps the server running and waiting for client requests. |
+| 1 | Imports the Flask application class and `jsonify` helper. |
+| 3 | Creates the Flask application object. `__name__` lets Flask identify this Python module. |
+| 5-9 | Stores three sample student records in a Python list. |
+| 12 | Registers the following function for the home URL `/`. |
+| 13 | Defines the function that handles requests to `/`. |
+| 14-21 | Returns a small HTML page with a heading and a link to the student JSON route. |
+| 24 | Registers the student route and allows HTTP GET requests. |
+| 25 | Defines the function that handles requests to `/students`. |
+| 26 | Converts the student list to JSON and returns it as the HTTP response. |
+| 29 | Checks that this file is being run directly, rather than imported by another Python file. |
+| 30 | Starts Flask on the local computer at port `5000`. |
 
 ### `client.py`
 
 ```python
-from urllib.request import urlopen
-import json
+import requests
 
+url = "http://127.0.0.1:5000/students"
+response = requests.get(url)
+response.raise_for_status()
 
-with urlopen("http://127.0.0.1:8000/") as response:
-    data = json.loads(response.read().decode())
-
-print("Service response:", data["message"])
+for student in response.json():
+    print(student["id"], student["name"], student["course"])
 ```
 | Line(s) | Explanation |
 |---|---|
-| 1 | Imports `urlopen`, which sends an HTTP request to a URL and returns the response. |
-| 2 | Imports `json` to decode the service's response. |
-| 5 | Sends a GET request to the service URL and opens the response. |
-| 6 | Reads the response bytes, decodes them into text, then parses the JSON into a Python dictionary. |
-| 8 | Prints the `message` value received from the service. |
+| 1 | Imports Requests, the HTTP client library. |
+| 3 | Stores the URL for the server's student-list API. |
+| 4 | Sends an HTTP GET request to that URL. |
+| 5 | Raises an error if the server returned an unsuccessful HTTP status. |
+| 7 | Reads and decodes the JSON response as a Python list, then loops through its records. |
+| 8 | Prints each student's ID, name, and course. |
 
 ## How to run
 
-Open a terminal in this folder. Start the service in the first terminal:
+The current Python setup does not have Flask or Requests installed. Install
+both packages once from a terminal in this folder:
+
+```powershell
+python -m pip install Flask requests
+```
+
+Start the service in the first terminal:
 
 ```powershell
 python server.py
 ```
 
-Leave it running. Open a second terminal in the same folder and run the client:
+Open `http://127.0.0.1:5000/` in a browser to display the HTML page. The
+student JSON is at `http://127.0.0.1:5000/students`.
+
+Leave the server running. In a second terminal in the same folder, run the
+client:
 
 ```powershell
 python client.py
 ```
 
-The client should display:
-
-```text
-Service response: Hello from the web service
-```
-
-Stop the server with Ctrl+C after running the client.
+The client prints the three student records. Stop the server with Ctrl+C when
+finished.
 
 ## Execution flow to remember
 
-1. The server creates an HTTP request handler and listens on port `8000`.
-2. The client sends a GET request to the server URL.
-3. The handler returns a JSON response with status `200 OK`.
-4. The client reads and decodes the JSON, then prints its message.
+1. Create the Flask application and student data.
+2. Map `/` to an HTML page and `/students` to a JSON response.
+3. Start the Flask server.
+4. Send a GET request from the client to `/students`.
+5. Decode and display the returned student records.
 
 ## Viva questions and short answers
 
 1. **What is a web service?**  
    A service that lets applications exchange data or request operations over a
-   network using standard protocols such as HTTP.
+   network using a protocol such as HTTP.
 
-2. **What is HTTP?**  
-   Hypertext Transfer Protocol, used for requests and responses between clients
-   and web servers.
+2. **What is Flask?**  
+   A Python web framework used here to define routes and run the HTTP service.
 
-3. **What is JSON?**  
-   JavaScript Object Notation, a text format for representing structured data.
+3. **What is a route?**  
+   A URL path mapped to a function that handles requests to that path.
 
-4. **What is the role of `server.py`?**  
-   It listens for HTTP requests and returns the service's JSON response.
+4. **What does `jsonify` do?**  
+   It converts Python data into a JSON HTTP response.
 
-5. **What is the role of `client.py`?**  
-   It requests the service URL and displays the returned message.
+5. **What does HTTP GET do in this practical?**  
+   It asks the `/students` service route to return the student records.
 
-6. **What does `do_GET()` do?**  
-   It handles an HTTP GET request received by the server.
+6. **What is the role of `client.py`?**  
+   It requests the JSON endpoint and displays the records returned by the server.
 
-7. **What does status code `200` mean?**  
-   The HTTP request succeeded.
+7. **What does `response.json()` do?**  
+   It decodes the response body from JSON into Python data.
 
-8. **Why is the response encoded before writing it?**  
-   An HTTP response body is written as bytes, so the JSON text is encoded.
+8. **What are `/` and `/students`?**  
+   They are routes: `/` serves HTML, while `/students` serves JSON data.
 
-9. **Why are two terminals used?**  
-   One keeps the server running while the other runs the client that consumes it.
+9. **Why do we run the server and client separately?**  
+   The server must stay active while the client sends its request and receives
+   the response.
 
-10. **Does this example require Flask or Requests?**  
-    No. It uses Python standard-library modules only.
+10. **What packages are needed to run these files?**  
+    Flask for the server and Requests for the client.

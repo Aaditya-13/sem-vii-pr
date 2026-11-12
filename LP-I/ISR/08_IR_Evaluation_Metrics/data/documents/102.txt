@@ -1,1 +1,0 @@
-Wind tunnel tests compare pressure distribution and lift on a wing at several angles of attack.

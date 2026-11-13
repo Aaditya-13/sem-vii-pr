@@ -18,6 +18,10 @@ env/
 *.so
 *.dylib
 
+# CORBA generated sources and Naming Service database
+/LP-I/DCS/pr2/CalcModule/
+/LP-I/DCS/pr2/orb.db/
+
 # IDE and editor settings
 .idea/
 .vscode/

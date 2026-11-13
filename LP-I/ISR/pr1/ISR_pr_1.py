@@ -1,5 +1,4 @@
 
-import numpy as np
 from nltk.stem import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -33,23 +32,23 @@ print(X.toarray().round(2))
 
 # 4. Single-Pass Clustering
 clusters = []
+leaders = []
 threshold = 0.20
 
 for i in range(len(docs)):
+    added = False
 
-    scores = []
+    for c, leader in enumerate(leaders):
+        similarity = cosine_similarity(X[i], X[leader])[0][0]
 
-    for cluster in clusters:
-        centroid = np.asarray(X[cluster].mean(axis=0)).ravel()
-        similarity = cosine_similarity(X[i], centroid.reshape(1, -1))[0][0]
-        scores.append(similarity)
+        if similarity >= threshold:
+            clusters[c].append(i)
+            added = True
+            break
 
-    if scores and max(scores) >= threshold:
-        best_cluster = scores.index(max(scores))
-        clusters[best_cluster].append(i)
-
-    else:
+    if not added:
         clusters.append([i])
+        leaders.append(i)
 
 # 5. Display Final Clusters
 print("\nFinal Clusters:")

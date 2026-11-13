@@ -1,4 +1,3 @@
-
 from whoosh.index import create_in
 from whoosh.fields import Schema, TEXT, ID
 from whoosh.qparser import QueryParser
@@ -20,13 +19,40 @@ writer.commit()
 
 print("Documents indexed successfully!")
 
+# inverted_index = {} #for mapping
+
+# for doc_id, text in documents:
+#     for word in set(text.lower().split()):
+#         inverted_index.setdefault(word, []).append(doc_id)
+
+# for word, ids in sorted(inverted_index.items()):
+#     print(word, "->", ids)
+
+
+# Print Mapping
+# with ix.searcher() as searcher:
+#     reader = searcher.reader()
+
+#     print("\nInverted Index:")
+#     for word in sorted(reader.lexicon("content")):
+#         postings = reader.postings("content", word)
+#         document_ids = []
+
+#         while postings.is_active():
+#             number = postings.id()
+#             document_ids.append(searcher.stored_fields(number)["id"])
+#             postings.next()
+
+#         print(word.decode("utf-8"), "->", document_ids)
+
 # 3. Boolean Search
 with ix.searcher() as searcher:
-    query = QueryParser("content", ix.schema).parse("Java AND programming")
+    boolean_input = input("\nEnter Boolean query (example: Java AND programming): ")
+    query = QueryParser("content", ix.schema).parse(boolean_input)
     results = searcher.search(query, limit=None)
 
     print("\n1. BOOLEAN SEARCH")
-    print("Query: Python AND programming")
+    print("Query:", boolean_input)
 
     for r in results:
         print("Document:", r["id"])
@@ -34,10 +60,12 @@ with ix.searcher() as searcher:
 
 # 4. Ranked Search using BM25F
 with ix.searcher(weighting=scoring.BM25F()) as searcher:
-    query = QueryParser("content", ix.schema).parse("Java OR learning")
+    ranked_input = input("\nEnter ranked search query (example: Java OR learning): ")
+    query = QueryParser("content", ix.schema).parse(ranked_input)
     results = searcher.search(query, limit=None)
 
     print("\n2. RANKED SEARCH")
+    print("Query:", ranked_input)
 
     for r in results:
         print("Document:", r["id"])

@@ -1,4 +1,3 @@
-
 import os, math, random
 
 # 1. Create documents

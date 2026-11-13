@@ -1,21 +1,16 @@
 import CalcModule.*;
 import org.omg.CORBA.ORB;
-import org.omg.CosNaming.NamingContextExt;
-import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.CosNaming.*;
 import java.util.Scanner;
 
 public class CalculatorClient {
     public static void main(String[] args) {
         try {
             ORB orb = ORB.init(args, null);
-
-            org.omg.CORBA.Object nameService =
-                    orb.resolve_initial_references("NameService");
-            NamingContextExt namingContext =
-                    NamingContextExtHelper.narrow(nameService);
-
+            NamingContextExt naming = NamingContextExtHelper.narrow(
+                    orb.resolve_initial_references("NameService"));
             Calculator calculator = CalculatorHelper.narrow(
-                    namingContext.resolve_str("Calculator"));
+                    naming.resolve_str("Calculator"));
 
             Scanner input = new Scanner(System.in);
             System.out.print("Enter first number: ");
@@ -53,7 +48,7 @@ public class CalculatorClient {
             System.out.println("Result = " + result);
             input.close();
         } catch (Exception e) {
-            System.err.println("Client error: " + e);
+            e.printStackTrace();
         }
     }
 }
